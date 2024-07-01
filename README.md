@@ -51,7 +51,7 @@ You can install the application by either cloning it from GitHub or downloading 
 
 ### Download as ZIP
 1. Download the ZIP file from GitHub:
-    - Go to the [repository page](https://github.com/YourUsernamUltraDeveloper7/PhotoGroupAI).
+    - Go to the [repository page](https://github.com/UltraDeveloper7/PhotoGroupAI).
     - Click on the "Code" button and select "Download ZIP".
     - Extract the downloaded ZIP file.
     - Navigate to the extracted directory:
