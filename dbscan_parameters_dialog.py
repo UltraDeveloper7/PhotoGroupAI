@@ -21,11 +21,11 @@ class DBSCANParametersDialog(QDialog):
         
         eps_info_button = QToolButton()
         eps_info_button.setIcon(QIcon.fromTheme("help-about"))
-        eps_info_button.setToolTip("eps: The maximum distance between two samples for one to be considered as in the neighborhood of the other.")
+        eps_info_button.setToolTip("The maximum distance between two samples for one to be considered as in the neighborhood of the other.")
         
         min_samples_info_button = QToolButton()
         min_samples_info_button.setIcon(QIcon.fromTheme("help-about"))
-        min_samples_info_button.setToolTip("min_samples: The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.")
+        min_samples_info_button.setToolTip("The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.")
         
         eps_layout = QHBoxLayout()
         eps_layout.addWidget(self.eps_spinbox)
