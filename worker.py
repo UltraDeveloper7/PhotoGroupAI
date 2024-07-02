@@ -13,7 +13,7 @@ class WorkerSignals(QObject):
     message = Signal(str, str)  # Signal type and message
 
 class Worker(QThread):
-    def __init__(self, image_paths, folder, kmeans_value, resample_value, algorithm, move_files, eps, min_samples):
+    def __init__(self, image_paths, folder, kmeans_value, resample_value, algorithm, move_files, eps, min_samples, affinity, linkage):
         super().__init__()
         self.signals = WorkerSignals()
         self.image_paths = image_paths
@@ -24,6 +24,8 @@ class Worker(QThread):
         self.move_files = move_files
         self.eps = eps
         self.min_samples = min_samples
+        self.affinity = affinity
+        self.linkage = linkage
 
     def run(self):
         try:
@@ -34,7 +36,9 @@ class Worker(QThread):
                 algorithm=self.algorithm,
                 signals=self.signals,
                 eps=self.eps,
-                min_samples=self.min_samples
+                min_samples=self.min_samples,
+                affinity=self.affinity,
+                linkage=self.linkage
             )
             clusters = clusterer.cluster_images(self.image_paths)
             valid_clusters = set(clusters) - {-1}  # Exclude noise points

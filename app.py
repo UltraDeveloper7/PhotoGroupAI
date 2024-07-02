@@ -1,10 +1,10 @@
+# gui.py
 import sys
 import glob
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 from worker import Worker
-from dbscan_parameters_dialog import DBSCANParametersDialog
 
 class GroupImgGUI(QWidget):
     def __init__(self, parent=None):
@@ -12,11 +12,13 @@ class GroupImgGUI(QWidget):
         self.dir = None
         self.eps = 0.5
         self.min_samples = 5
+        self.affinity = 'euclidean'
+        self.linkage = 'ward'
         self.init_ui()
 
     def init_ui(self):
         self.setWindowTitle("AI-Grouping-GUI")
-        self.setGeometry(100, 100, 400, 300)
+        self.setGeometry(100, 100, 400, 400) 
 
         layout = QVBoxLayout()
 
@@ -45,12 +47,12 @@ class GroupImgGUI(QWidget):
         resample_info_button.setToolTip("The size to which each image will be resized before feature extraction.")
 
         self.algorithm_combobox = QComboBox()
-        self.algorithm_combobox.addItems(["KMeans", "DBSCAN"])
-        self.algorithm_combobox.currentTextChanged.connect(self.show_dbscan_parameters)
+        self.algorithm_combobox.addItems(["KMeans", "DBSCAN", "Agglomerative"])
+        self.algorithm_combobox.currentTextChanged.connect(self.show_algorithm_parameters)
 
         algorithm_info_button = QToolButton()
         algorithm_info_button.setIcon(QIcon.fromTheme("help-about"))
-        algorithm_info_button.setToolTip("Choose between KMeans and DBSCAN clustering algorithms.")
+        algorithm_info_button.setToolTip("Choose between KMeans, DBSCAN, and Agglomerative clustering algorithms.")
 
         self.move_checkbox = QCheckBox()
         self.size_checkbox = QCheckBox()
@@ -63,6 +65,72 @@ class GroupImgGUI(QWidget):
 
         self.settings_groupbox.setLayout(settings_layout)
         layout.addWidget(self.settings_groupbox)
+
+        self.dbscan_settings_groupbox = QGroupBox("DBSCAN Settings")
+        dbscan_settings_layout = QFormLayout()
+
+        self.eps_spinbox = QDoubleSpinBox()
+        self.eps_spinbox.setRange(0.1, 10.0)
+        self.eps_spinbox.setValue(0.5)
+        self.eps_spinbox.setSingleStep(0.1)
+        eps_info_button = QToolButton()
+        eps_info_button.setIcon(QIcon.fromTheme("help-about"))
+        eps_info_button.setToolTip("The maximum distance between two samples for one to be considered as in the neighborhood of the other.")
+
+        self.min_samples_spinbox = QSpinBox()
+        self.min_samples_spinbox.setRange(1, 100)
+        self.min_samples_spinbox.setValue(5)
+        min_samples_info_button = QToolButton()
+        min_samples_info_button.setIcon(QIcon.fromTheme("help-about"))
+        min_samples_info_button.setToolTip("The number of samples (or total weight) in a neighborhood for a point to be considered as a core point.")
+
+        dbscan_settings_layout.addRow(QLabel("eps:"), self.create_parameter_widget(self.eps_spinbox, eps_info_button))
+        dbscan_settings_layout.addRow(QLabel("min_samples:"), self.create_parameter_widget(self.min_samples_spinbox, min_samples_info_button))
+
+        self.dbscan_settings_groupbox.setLayout(dbscan_settings_layout)
+        self.dbscan_settings_groupbox.setVisible(False)
+        layout.addWidget(self.dbscan_settings_groupbox)
+        
+        self.agglomerative_settings_groupbox = QGroupBox("Agglomerative Settings")
+        agglomerative_settings_layout = QFormLayout()
+
+        self.affinity_combobox = QComboBox()
+        self.affinity_combobox.addItems(["euclidean", "l1", "l2", "manhattan", "cosine"])
+        self.affinity_combobox.setCurrentText("euclidean")
+        self.affinity_combobox.setToolTip("Affinity measures the distance between clusters in different ways.")
+        
+        affinity_info_button = QToolButton()
+        affinity_info_button.setIcon(QIcon.fromTheme("help-about"))
+        affinity_info_button.setToolTip(
+            "Affinity measures the distance between clusters in different ways:\n"
+            "- euclidean: Straight-line distance.\n"
+            "- l1: Sum of absolute differences (Manhattan distance).\n"
+            "- l2: Sum of squared differences (Euclidean distance).\n"
+            "- manhattan: Distance along axes at right angles.\n"
+            "- cosine: Cosine of the angle between vectors."
+        )
+
+        self.linkage_combobox = QComboBox()
+        self.linkage_combobox.addItems(["ward", "complete", "average", "single"])
+        self.linkage_combobox.setCurrentText("ward")
+        self.linkage_combobox.setToolTip("Linkage determines the criterion for merging clusters.")
+        
+        linkage_info_button = QToolButton()
+        linkage_info_button.setIcon(QIcon.fromTheme("help-about"))
+        linkage_info_button.setToolTip(
+            "Linkage determines the criterion for merging clusters:\n"
+            "- ward: Minimizes the variance within clusters.\n"
+            "- complete: Maximizes the distance between clusters.\n"
+            "- average: Uses the average distance between clusters.\n"
+            "- single: Minimizes the distance between clusters."
+        )
+
+        agglomerative_settings_layout.addRow(QLabel("Affinity:"), self.create_parameter_widget(self.affinity_combobox, affinity_info_button))
+        agglomerative_settings_layout.addRow(QLabel("Linkage:"), self.create_parameter_widget(self.linkage_combobox, linkage_info_button))
+
+        self.agglomerative_settings_groupbox.setLayout(agglomerative_settings_layout)
+        self.agglomerative_settings_groupbox.setVisible(False)
+        layout.addWidget(self.agglomerative_settings_groupbox)
 
         self.run_btn = QPushButton("Run")
         self.run_btn.clicked.connect(self.run)
@@ -91,19 +159,22 @@ class GroupImgGUI(QWidget):
 
         self.setLayout(layout)
 
-    def create_parameter_widget(self, widget, info_button):
+    def create_parameter_widget(self, widget, info_button=None):
         layout = QHBoxLayout()
         layout.addWidget(widget)
-        layout.addWidget(info_button)
+        if info_button:
+            layout.addWidget(info_button)
         container = QWidget()
         container.setLayout(layout)
         return container
 
-    def show_dbscan_parameters(self):
+    def show_algorithm_parameters(self):
+        self.agglomerative_settings_groupbox.setVisible(False)
+        self.dbscan_settings_groupbox.setVisible(False)
         if self.algorithm_combobox.currentText() == "DBSCAN":
-            dialog = DBSCANParametersDialog(self)
-            if dialog.exec() == QDialog.Accepted:
-                self.eps, self.min_samples = dialog.get_parameters()
+            self.dbscan_settings_groupbox.setVisible(True)
+        elif self.algorithm_combobox.currentText() == "Agglomerative":
+            self.agglomerative_settings_groupbox.setVisible(True)
 
     def select_folder(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Directory")
@@ -140,8 +211,10 @@ class GroupImgGUI(QWidget):
             resample_value=self.resample_spinbox.value(),
             algorithm=self.algorithm_combobox.currentText().lower(),
             move_files=self.move_checkbox.isChecked(),
-            eps=self.eps,
-            min_samples=self.min_samples
+            eps=self.eps_spinbox.value(),
+            min_samples=self.min_samples_spinbox.value(),
+            affinity=self.affinity_combobox.currentText(),
+            linkage=self.linkage_combobox.currentText()
         )
 
         self.worker.signals.progress.connect(self.update_progress)

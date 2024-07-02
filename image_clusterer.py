@@ -7,7 +7,7 @@ from keras.preprocessing import image  # type: ignore
 from keras.models import Model  # type: ignore
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-from sklearn.cluster import KMeans, DBSCAN
+from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
 from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing import cpu_count
 
@@ -15,7 +15,7 @@ Image.MAX_IMAGE_PIXELS = None
 warnings.simplefilter('ignore')
 
 class ImageClusterer:
-    def __init__(self, n_clusters=3, resample_size=128, algorithm='kmeans', signals=None, eps=0.5, min_samples=5):
+    def __init__(self, n_clusters=3, resample_size=128, algorithm='kmeans', signals=None, eps=0.5, min_samples=5, affinity='euclidean', linkage='ward'):
         self.n_clusters = n_clusters
         self.resample_size = resample_size
         self.algorithm = algorithm
@@ -24,6 +24,8 @@ class ImageClusterer:
         self.signals = signals
         self.eps = eps
         self.min_samples = min_samples
+        self.affinity = affinity
+        self.linkage = linkage
 
     def extract_features(self, img_path):
         img = image.load_img(img_path, target_size=(224, 224))
@@ -49,6 +51,9 @@ class ImageClusterer:
         pool.join()
         features = [f for f in features if f is not None]
 
+        if len(features) == 0:
+            raise ValueError("No valid features extracted from images.")
+
         pca = PCA(n_components=50)
         pca_features = pca.fit_transform(features)
 
@@ -59,6 +64,8 @@ class ImageClusterer:
             clusterer = KMeans(n_clusters=self.n_clusters)
         elif self.algorithm == 'dbscan':
             clusterer = DBSCAN(eps=self.eps, min_samples=self.min_samples)
+        elif self.algorithm == 'agglomerative':
+            clusterer = AgglomerativeClustering(n_clusters=self.n_clusters, metric=self.affinity, linkage=self.linkage)
         else:
             raise ValueError("Unsupported clustering algorithm")
 
