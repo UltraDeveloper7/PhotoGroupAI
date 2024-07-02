@@ -1,7 +1,5 @@
 import os
 import shutil
-from multiprocessing.dummy import Pool as ThreadPool
-from multiprocessing import cpu_count
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
